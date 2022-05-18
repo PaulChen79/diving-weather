@@ -1,6 +1,7 @@
 require('dotenv').config()
 const request = require('request')
 const axios = require('axios')
+const locations = require('../models/locations.json')
 const MY_VERIFY_TOKEN = process.env.MY_VERIFY_TOKEN
 
 const chatbotController = {
@@ -33,7 +34,6 @@ const chatbotController = {
         if (webhookEvent.message) {
           handleMessage(senderPsid, webhookEvent.message)
         } else if (webhookEvent.postback) {
-          console.log(webhookEvent.postback)
           handlePostback(senderPsid, webhookEvent.postback)
         }
       })
@@ -44,77 +44,61 @@ const chatbotController = {
   }
 }
 
-function handleMessage (senderPsid, receivedMessage) {
+function handleMessage(senderPsid, receivedMessage) {
   // Check if the message contains text
   let response = {}
 
   if (receivedMessage.text) {
-    axios.get(`http://api.openweathermap.org/geo/1.0/direct?q=${receivedMessage.text}&appid=a3a652db95697608165e76ed2d559e19`)
-      .then(response => {
-        const position = {
-          lat: response.data[0].lat,
-          lon: response.data[0].lon
-        }
-        return position
-      })
-      .then(position => {
-        return axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${position.lat}&lon=${position.lon}&appid=a3a652db95697608165e76ed2d559e19`)
-      })
-      .then(response => {
-        const temp = Math.round(response.data.main.temp - 273.15)
-        const message = `The temp of ${receivedMessage.text} now is: ${temp} celsius`
-        return message
-      })
-      .then(message => {
-        response = {
-          text: message
-        }
-        // Create the payload for a basic text message
-        callSendAPI(senderPsid, response)
-      })
-      .catch(error => {
-        console.log(error)
-      })
-    response = {
-      text: 'Sorry! something wrong. Please try again'
-    }
-    // Create the payload for a basic text message
-    callSendAPI(senderPsid, response)
-  } else if (receivedMessage.attachments) {
-    // Gets the URL of the message attachment
-    const attachmentUrl = receivedMessage.attachments[0].payload.url
-    response = {
-      attachment: {
-        type: 'template',
-        payload: {
-          template_type: 'generic',
-          elements: [{
-            title: 'Is this the right picture?',
-            subtitle: 'Tap a button to answer.',
-            image_url: attachmentUrl,
-            buttons: [{
-              type: 'postback',
-              title: 'Yes!',
-              payload: 'yes'
-            },
-            {
-              type: 'postback',
-              title: 'No!',
-              payload: 'no'
-            }
-            ]
-          }]
-        }
+    const filteredLocation = locations.filter(location => location.name.includes(receivedMessage.text))
+    if (filteredLocation.length) {
+      const locationName = filteredLocation[0].alias
+      const LocationLon = filteredLocation[0].lon
+      const locationLat = filteredLocation[0].lat
+      console.log(locationName)
+      const today = new Date(Date.now()).toISOString().substring(0, 10) + 'T00:00:00'
+      const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
+      const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=CWB-E120C9CE-49B1-42D6-82A9-A28C742A403E&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
+      const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=a3a652db95697608165e76ed2d559e19`)
+
+      return Promise.all([
+        axios.get(tideUrl),
+        axios.get(weatherUrl)
+      ])
+        .then(([tideData, weatherData]) => {
+          const result = {
+            location: '',
+            time: `${today.substring(0, 10)}`,
+            tideDifference: '',
+            tideChanging: '',
+            temperature: Math.round(weatherData.data.main.temp - 273.15),
+            humidity: weatherData.data.main.humidity,
+            rain: `每小時： ${weatherData.data.rain || 0}mm`,
+            wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： ' + changeDegOfWing(weatherData.data.wind.deg)
+          }
+
+          result.location = tideData.data.records.location[0].locationName
+          result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
+          result.tideChanging = `潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}\n`
+          return result
+        })
+        .then(result => {
+          const response = {
+            text: '查詢地點： ' + filteredLocation[0].name + '\n' + '潮差： ' + result.tideDifference + '\n' + '時間： ' + result.time + '\n' + result.tideChanging + '\n' + `氣溫： ${result.temperature}度` + '\n' + `濕度： ${result.humidity}%` + '\n' + '雨量' + result.rain + '\n' + result.wind
+          }
+          callSendAPI(senderPsid, response)
+        })
+        .catch(error => console.log(error))
+    } else {
+      const response = {
+        text: '抱歉我不認識這個潛點，請換個地點或名稱試試看'
       }
+      callSendAPI(senderPsid, response)
     }
   }
-
-  // Sends the response message
-  callSendAPI(senderPsid, response)
 }
 
 // Handles messaging_postbacks events
-function handlePostback (senderPsid, receivedPostback) {
+function handlePostback(senderPsid, receivedPostback) {
   if (receivedPostback.title === 'Get Started') {
     const response = {
       attachment: {
@@ -172,13 +156,12 @@ function handlePostback (senderPsid, receivedPostback) {
 
       result.location = tideData.data.records.location[0].locationName
       result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
-      result.tideChanging = `潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}\n
-        `
+      result.tideChanging = `潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}\n`
       return result
     })
     .then(result => {
       const response = {
-        text: '查詢地點： ' + result.location + '\n' + '潮差： ' + result.tideDifference + '\n' + '時間： ' + result.time + '\n' + result.tideChanging + '\n' + `氣溫： ${result.temperature}度` + '\n' + `濕度： ${result.humidity}%` + '\n' + '雨量' + result.rain + '\n' + result.wind
+        text: '查詢地點： ' + result.location + '\n' + '潮差： ' + result.tideDifference + '\n' + '時間： ' + result.time + '\n' + result.tideChanging + `氣溫： ${result.temperature}度` + '\n' + `濕度： ${result.humidity}%` + '\n' + '雨量' + result.rain + '\n' + result.wind
       }
       callSendAPI(senderPsid, response)
     })
@@ -215,7 +198,7 @@ function handlePostback (senderPsid, receivedPostback) {
     .catch(error => console.log(error))
 }
 
-function callSendAPI (senderPsid, response) {
+function callSendAPI(senderPsid, response) {
   // Construct the message body
   const requestBody = {
     recipient: {
@@ -239,7 +222,7 @@ function callSendAPI (senderPsid, response) {
   })
 }
 
-function changeDegOfWing (deg) {
+function changeDegOfWing(deg) {
   let windDirection = ''
   if ((deg > 337.5 && deg <= 359) || deg === 0) {
     windDirection = '北'
