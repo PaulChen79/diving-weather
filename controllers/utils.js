@@ -314,7 +314,7 @@ const changeDegOfWing = deg => {
   } else if (deg > 135 && deg <= 157.5) {
     windDirection = '南南東 ↖'
   } else if (deg > 157.5 && deg <= 180) {
-    windDirection = '南 ↑↗'
+    windDirection = '南 ↑'
   } else if (deg > 180 && deg <= 202.5) {
     windDirection = '南南西 ↗'
   } else if (deg > 202.5 && deg <= 225) {
