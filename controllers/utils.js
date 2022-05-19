@@ -24,12 +24,6 @@ const handleMessage = (senderPsid, receivedMessage) => {
         axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
       ])
         .then(([tideData, weatherData, waveData]) => {
-          let waveDir = ''
-          if (waveData.data.hours[0].waveDirection.sg < 180) {
-            waveDir = changeDegOfWing(waveData.data.hours[0].waveDirection.sg + 180)
-          } else {
-            waveDir = changeDegOfWing(waveData.data.hours[0].waveDirection.sg - 180)
-          }
           const result = {
             location: '',
             time: `${today.substring(0, 10)}`,
@@ -38,9 +32,9 @@ const handleMessage = (senderPsid, receivedMessage) => {
             temperature: Math.round(weatherData.data.main.temp - 273.15),
             humidity: weatherData.data.main.humidity,
             rain: `每小時： ${weatherData.data.rain || 0}mm`,
-            wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： ' + changeDegOfWing(weatherData.data.wind.deg),
+            wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDegOfWing(weatherData.data.wind.deg),
             waveHeight: waveData.data.hours[0].waveHeight.sg,
-            waveDirection: waveDir
+            waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg)
           }
 
           result.location = tideData.data.records.location[0].locationName
@@ -51,7 +45,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
         .then(result => {
           const response = {
             text: `
-            查詢地點： ${filteredLocation[0].name}\n浪高： ${result.waveHeight}米\n浪向： 往` + result.waveDirection + `\n潮差： ${result.tideDifference}\n時間： ${result.time}\n\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`
+            查詢地點： ${filteredLocation[0].name}\n浪高： ${result.waveHeight}米\n浪向： from ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n時間： ${result.time}\n\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`
           }
           callSendAPI(senderPsid, response)
         })
@@ -113,12 +107,6 @@ const handlePostback = (senderPsid, receivedPostback) => {
     axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
   ])
     .then(([tideData, weatherData, waveData]) => {
-      let waveDir = ''
-      if (waveData.data.hours[0].waveDirection.sg < 180) {
-        waveDir = changeDegOfWing(waveData.data.hours[0].waveDirection.sg + 180)
-      } else {
-        waveDir = changeDegOfWing(waveData.data.hours[0].waveDirection.sg - 180)
-      }
       const result = {
         location: '',
         time: `${today.substring(0, 10)}`,
@@ -127,9 +115,9 @@ const handlePostback = (senderPsid, receivedPostback) => {
         temperature: Math.round(weatherData.data.main.temp - 273.15),
         humidity: weatherData.data.main.humidity,
         rain: `每小時： ${weatherData.data.rain || 0}mm`,
-        wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： ' + changeDegOfWing(weatherData.data.wind.deg),
+        wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDegOfWing(weatherData.data.wind.deg),
         waveHeight: waveData.data.hours[0].waveHeight.sg,
-        waveDirection: waveDir
+        waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg)
       }
 
       result.location = tideData.data.records.location[0].locationName
@@ -140,7 +128,7 @@ const handlePostback = (senderPsid, receivedPostback) => {
     .then(result => {
       const response = {
         text: `
-            查詢地點： ${filteredLocation[0].name}\n浪高： ${result.waveHeight}米\n浪向： 往` + result.waveDirection + `\n潮差： ${result.tideDifference}\n時間： ${result.time}\n\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`
+            查詢地點： ${filteredLocation[0].name}\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n時間： ${result.time}\n\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`
       }
       callSendAPI(senderPsid, response)
     })
@@ -179,37 +167,37 @@ const handlePostback = (senderPsid, receivedPostback) => {
 const changeDegOfWing = deg => {
   let windDirection = ''
   if ((deg > 337.5 && deg <= 359) || deg === 0) {
-    windDirection = '北 🡡'
+    windDirection = '北 🡣'
   } else if (deg > 0 && deg <= 22.5) {
-    windDirection = '北北東 🡥'
+    windDirection = '北北東 🡧'
   } else if (deg > 22.5 && deg <= 45) {
-    windDirection = '東北 🡥'
+    windDirection = '東北 🡧'
   } else if (deg > 45 && deg <= 67.5) {
-    windDirection = '東北東 🡥'
+    windDirection = '東北東 🡧'
   } else if (deg > 67.5 && deg <= 90) {
-    windDirection = '東 🡢'
+    windDirection = '東 🡠'
   } else if (deg > 90 && deg <= 112.5) {
-    windDirection = '東南東 🡦'
+    windDirection = '東南東 🡤'
   } else if (deg > 112.5 && deg <= 135) {
-    windDirection = '東南 🡦'
+    windDirection = '東南 🡤'
   } else if (deg > 135 && deg <= 157.5) {
-    windDirection = '南南東 🡦'
+    windDirection = '南南東 🡤'
   } else if (deg > 157.5 && deg <= 180) {
-    windDirection = '南 🡣'
+    windDirection = '南 🡡'
   } else if (deg > 180 && deg <= 202.5) {
-    windDirection = '南南西 🡧'
+    windDirection = '南南西 🡥'
   } else if (deg > 202.5 && deg <= 225) {
-    windDirection = '西南 🡧'
+    windDirection = '西南 🡥'
   } else if (deg > 225 && deg <= 247.5) {
-    windDirection = '西南西 🡧'
+    windDirection = '西南西 🡥'
   } else if (deg > 247.5 && deg <= 270) {
-    windDirection = '西 🡠'
+    windDirection = '西 🡢'
   } else if (deg > 270 && deg <= 292.5) {
-    windDirection = '西北西 🡤'
+    windDirection = '西北西 🡦'
   } else if (deg > 292.5 && deg <= 315) {
-    windDirection = '西北 🡤'
+    windDirection = '西北 🡦'
   } else if (deg > 315 && deg <= 337.5) {
-    windDirection = '北北西 🡤'
+    windDirection = '北北西 🡦'
   }
   return windDirection
 }
