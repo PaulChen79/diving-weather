@@ -122,7 +122,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
         const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
         const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
         const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-        const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection&start=${timeNow}&end=${timeNextHr}`)
+        const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature&start=${timeNow}&end=${timeNextHr}`)
 
         return Promise.all([
           axios.get(tideUrl),
@@ -140,7 +140,8 @@ const handleMessage = (senderPsid, receivedMessage) => {
               rain: `每小時： ${weatherData.data.rain || 0}mm`,
               wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDegOfWing(weatherData.data.wind.deg),
               waveHeight: waveData.data.hours[0].waveHeight.sg,
-              waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg)
+              waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg),
+              waterTemperature: waveData.data.hours[0].waterTemperature
             }
 
             result.location = tideData.data.records.location[0].locationName
@@ -151,7 +152,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
           .then(result => {
             const response = {
               text: `
-            查詢地點： ${filteredLocation[0].name}\n浪高： ${result.waveHeight}米\n浪向： from ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n時間： ${result.time}\n\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+            查詢地點： ${filteredLocation[0].name}\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n時間： ${result.time}\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
               quick_replies: [{
                 content_type: 'text',
                 title: '如何使用',
@@ -243,7 +244,7 @@ const handlePostback = (senderPsid, receivedPostback) => {
   const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
   const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
   const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-  const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection&start=${timeNow}&end=${timeNextHr}`)
+  const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature&start=${timeNow}&end=${timeNextHr}`)
 
   return Promise.all([
     axios.get(tideUrl),
@@ -261,7 +262,8 @@ const handlePostback = (senderPsid, receivedPostback) => {
         rain: `每小時： ${weatherData.data.rain || 0}mm`,
         wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDegOfWing(weatherData.data.wind.deg),
         waveHeight: waveData.data.hours[0].waveHeight.sg,
-        waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg)
+        waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg),
+        waterTemperature: waveData.data.hours[0].waterTemperature
       }
 
       result.location = tideData.data.records.location[0].locationName
@@ -272,7 +274,7 @@ const handlePostback = (senderPsid, receivedPostback) => {
     .then(result => {
       const response = {
         text: `
-            查詢地點： ${filteredLocation[0].name}\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n時間： ${result.time}\n\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+            查詢地點： ${filteredLocation[0].name}\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n時間： ${result.time}\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
         quick_replies: [{
           content_type: 'text',
           title: '如何使用',
