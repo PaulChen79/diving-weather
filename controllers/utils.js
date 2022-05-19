@@ -110,6 +110,25 @@ const handleMessage = (senderPsid, receivedMessage) => {
         }]
       }
       return callSendAPI(senderPsid, response)
+    } else if (receivedMessage.text.includes('保羅')) {
+      const response = {
+        text: '嗯？雖然我不知道你說什麼，但我知道保羅他很帥',
+        quick_replies: [{
+          content_type: 'text',
+          title: '如何使用',
+          payload: '<POSTBACK_PAYLOAD>'
+        }, {
+          content_type: 'text',
+          title: '推薦的潛點',
+          payload: '<POSTBACK_PAYLOAD>'
+        },
+        {
+          content_type: 'text',
+          title: '經常查詢的潛點',
+          payload: '<POSTBACK_PAYLOAD>'
+        }]
+      }
+      return callSendAPI(senderPsid, response)
     } else {
       const filteredLocation = locations.filter(location => location.name.includes(receivedMessage.text))
       if (filteredLocation.length) {
