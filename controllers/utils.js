@@ -153,7 +153,22 @@ const handleMessage = (senderPsid, receivedMessage) => {
           .then(result => {
             const response = {
               text: `
-              日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+              日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`
+            }
+            callSendAPI(senderPsid, response)
+            return [result.temperature, result.waterTemperature]
+          })
+          .then(([temperature, waterTemperature]) => {      
+            let status = ''
+            if (temperature >= 29 && waterTemperature >= 28) {
+              status = 'hot'
+            } else if ((temperature < 29 && temperature >= 26) && (waterTemperature < 28 && waterTemperature >= 25)) {
+              status = 'warm'
+            } else {
+              status = 'cold'
+            }
+            let response = {
+              text: ``,
               quick_replies: [{
                 content_type: 'text',
                 title: '如何使用',
@@ -169,7 +184,16 @@ const handleMessage = (senderPsid, receivedMessage) => {
                 payload: '<POSTBACK_PAYLOAD>'
               }]
             }
-            callSendAPI(senderPsid, response)
+            if (status === 'hot') {
+              response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
+            } else if (status === 'warm') {
+              response.text = '穿上3mm以內的防寒衣應該足夠了～\n泡太久可能還是會有點冷\n還是要注意一下海象天氣喔！'
+            } else {
+              response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
+            }
+            setTimeout(() => {
+              callSendAPI(senderPsid, response)
+            }, "2000")
           })
           .catch(error => console.log(error))
       } else {
@@ -195,7 +219,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
     }
   } else {
     const response = {
-      text: '抱歉我看不懂你傳的是什麼，請輸入"文字"地點或名稱試試看',
+      text: '抱歉我看不懂你傳這個什麼意思？\n不要玩我啦～～～\n請輸入"文字"地點或名稱試試看',
       quick_replies: [{
         content_type: 'text',
         title: '如何使用',
@@ -217,7 +241,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
 const handlePostback = (senderPsid, receivedPostback) => {
   if (receivedPostback.title === 'Get Started') {
     const response = {
-      text: '可以輸入潛點名稱來查詢當地天候狀況，或是點選以下按鈕來得到更多資訊唷！',
+      text: '哈囉！這裡是潛點即時氣候查詢機器人\n你可以輸入潛點關鍵字來查詢當地天候狀況\n或是點選以下按鈕來得到更多資訊唷！',
       quick_replies: [{
         content_type: 'text',
         title: '如何使用',
@@ -293,6 +317,44 @@ const handlePostback = (senderPsid, receivedPostback) => {
         }]
       }
       callSendAPI(senderPsid, response)
+      return [result.temperature, result.waterTemperature]
+    })
+    .then(([temperature, waterTemperature]) => {
+      let status = ''
+      if (temperature >= 29 && waterTemperature >= 28) {
+        status = 'hot'
+      } else if ((temperature < 29 && temperature >= 26) && (waterTemperature < 28 && waterTemperature >= 25)) {
+        status = 'warm'
+      } else {
+        status = 'cold'
+      }
+      let response = {
+        text: ``,
+        quick_replies: [{
+          content_type: 'text',
+          title: '如何使用',
+          payload: '<POSTBACK_PAYLOAD>'
+        }, {
+          content_type: 'text',
+          title: '推薦的潛點',
+          payload: '<POSTBACK_PAYLOAD>'
+        },
+        {
+          content_type: 'text',
+          title: '經常查詢的潛點',
+          payload: '<POSTBACK_PAYLOAD>'
+        }]
+      }
+      if (status === 'hot') {
+        response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
+      } else if (status === 'warm') {
+        response.text = '穿上3mm以內的防寒衣應該足夠了～\n泡太久可能還是會有點冷\n還是要注意一下海象天氣喔！'
+      } else {
+        response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
+      }
+      setTimeout(() => {
+        callSendAPI(senderPsid, response)
+      }, "2000")
     })
     .catch(error => console.log(error))
 }
