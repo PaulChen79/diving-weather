@@ -152,7 +152,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
           .then(result => {
             const response = {
               text: `
-            查詢地點： ${filteredLocation[0].name}\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n時間： ${result.time}\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+              日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${timeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
               quick_replies: [{
                 content_type: 'text',
                 title: '如何使用',
@@ -268,13 +268,13 @@ const handlePostback = (senderPsid, receivedPostback) => {
 
       result.location = tideData.data.records.location[0].locationName
       result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
-      result.tideChanging = `潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}`
+      result.tideChanging = `當日潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}`
       return result
     })
     .then(result => {
       const response = {
         text: `
-            查詢地點： ${filteredLocation[0].name}\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n時間： ${result.time}\n${result.tideChanging}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+            日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${timeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
         quick_replies: [{
           content_type: 'text',
           title: '如何使用',
