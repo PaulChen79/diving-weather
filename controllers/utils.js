@@ -141,7 +141,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
               wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDegOfWing(weatherData.data.wind.deg),
               waveHeight: waveData.data.hours[0].waveHeight.sg,
               waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg),
-              waterTemperature: waveData.data.hours[0].waterTemperature
+              waterTemperature: waveData.data.hours[0].waterTemperature.sg
             }
 
             result.location = tideData.data.records.location[0].locationName
@@ -263,7 +263,7 @@ const handlePostback = (senderPsid, receivedPostback) => {
         wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDegOfWing(weatherData.data.wind.deg),
         waveHeight: waveData.data.hours[0].waveHeight.sg,
         waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg),
-        waterTemperature: waveData.data.hours[0].waterTemperature
+        waterTemperature: waveData.data.hours[0].waterTemperature.sg
       }
 
       result.location = tideData.data.records.location[0].locationName
