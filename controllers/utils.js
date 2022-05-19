@@ -143,10 +143,10 @@ const handleMessage = (senderPsid, receivedMessage) => {
               waveDirection: changeDegOfWing(waveData.data.hours[0].waveDirection.sg),
               waterTemperature: waveData.data.hours[0].waterTemperature.sg
             }
-
+            const tideElemant = tideData.data.records.location[0].validTime[0].weatherElement[2]
             result.location = tideData.data.records.location[0].locationName
             result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
-            result.tideChanging = `潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}`
+            result.tideChanging = `潮汐變化：\n${tideElemant.time[0].dataTime.substring(11, 16)} - ${tideElemant.time[0].parameter[0].parameterValue}\n${tideElemant.time[1].dataTime.substring(11, 16)} - ${tideElemant.time[1].parameter[0].parameterValue}\n${tideElemant.time[2].dataTime.substring(11, 16)} - ${tideElemant.time[2].parameter[0].parameterValue}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : ''} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`
             return result
           })
           .then(result => {
