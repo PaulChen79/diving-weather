@@ -169,7 +169,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
 const handlePostback = (senderPsid, receivedPostback) => {
   if (receivedPostback.title === 'Get Started') {
     const response = {
-      text: '哈囉！這裡是潛點即時氣候查詢機器人\n你可以輸入潛點關鍵字來查詢當地天候狀況\n或是點選以下按鈕來得到更多資訊唷！',
+      text: '哈囉！這裡是潛點即時氣候查詢機器人\n你可以輸入潛點關鍵字來查詢當地天候狀況\n天候狀況每15分鐘更新一次\n或是點選以下按鈕來得到更多資訊唷！',
       quick_replies: quickReplies
     }
     return callSendAPI(senderPsid, response)
