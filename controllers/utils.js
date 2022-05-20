@@ -1,7 +1,7 @@
 require('dotenv').config()
+const Weather = require('../models/weather')
 
 // Packages
-const axios = require('axios')
 const request = require('request')
 const locations = require('../models/locations.json')
 
@@ -101,30 +101,9 @@ const handleMessage = (senderPsid, receivedMessage) => {
     } else {
       const filteredLocation = locations.filter(location => location.name.includes(receivedMessage.text))
       if (filteredLocation.length) {
-        // URL variables
-        const locationName = filteredLocation[0].alias
-        const LocationLon = filteredLocation[0].lon
-        const locationLat = filteredLocation[0].lat
-        const timeNow = new Date(Date.now()).toISOString()
-        const timeNextHr = new Date(Date.now() + 3600000).toISOString()
-        const today = new Date(Date.now()).toISOString().substring(0, 10) + 'T00:00:00'
-        const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
-        // URLs
-        const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
-        const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-        const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentDirection,currentSpeed,cloudCover&start=${timeNow}&end=${timeNextHr}`)
-
-        return Promise.all([
-          axios.get(tideUrl),
-          axios.get(weatherUrl),
-          axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
-        ])
-          .then(([tideData, weatherData, waveData]) => {
-            const result = genResult(tideData, weatherData, waveData, filteredLocation[0].name, today)
-            return result
-          })
+        const keyword = new RegExp(receivedMessage.text, 'i')
+        return Weather.findOne({ location: { $regex: keyword } })
           .then(result => {
-            // Generate response and send to client
             const suggestResponse = checkWaterAndAirTemp(result.temperature, result.waterTemperature)
             const response = genResponse(
               result.time,
@@ -172,31 +151,9 @@ const handlePostback = (senderPsid, receivedPostback) => {
     }
     return callSendAPI(senderPsid, response)
   }
-  // URL variables
-  const filteredLocation = locations.filter(location => location.name.includes(receivedPostback.payload))
-  const locationName = filteredLocation[0].alias
-  const LocationLon = filteredLocation[0].lon
-  const locationLat = filteredLocation[0].lat
-  const timeNow = new Date(Date.now()).toISOString()
-  const timeNextHr = new Date(Date.now() + 3600000).toISOString()
-  const today = new Date(Date.now()).toISOString().substring(0, 10) + 'T00:00:00'
-  const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
-  // URLs
-  const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
-  const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-  const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentSpeed,currentDirection,cloudCover&start=${timeNow}&end=${timeNextHr}`)
-
-  return Promise.all([
-    axios.get(tideUrl),
-    axios.get(weatherUrl),
-    axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
-  ])
-    .then(([tideData, weatherData, waveData]) => {
-      const result = genResult(tideData, weatherData, waveData, filteredLocation[0].name, today)
-      return result
-    })
+  const keyword = new RegExp(receivedPostback.title, 'i')
+  return Weather.findOne({ location: { $regex: keyword } })
     .then(result => {
-      // Generate response and send to client
       const suggestResponse = checkWaterAndAirTemp(result.temperature, result.waterTemperature)
       const response = genResponse(
         result.time,
