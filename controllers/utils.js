@@ -106,7 +106,6 @@ const handleMessage = (senderPsid, receivedMessage) => {
         const LocationLon = filteredLocation[0].lon
         const locationLat = filteredLocation[0].lat
         const timeNow = new Date(Date.now()).toISOString()
-        const taiwanTimeNow = new Date(Date.now() + 28800000).toISOString()
         const timeNextHr = new Date(Date.now() + 3600000).toISOString()
         const today = new Date(Date.now()).toISOString().substring(0, 10) + 'T00:00:00'
         const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
@@ -131,7 +130,6 @@ const handleMessage = (senderPsid, receivedMessage) => {
               result.time,
               result.location,
               result.tideChanging,
-              taiwanTimeNow.substring(11, 19),
               result.waterTemperature,
               result.waveHeight,
               result.waveDirection,
@@ -175,7 +173,6 @@ const handlePostback = (senderPsid, receivedPostback) => {
     return callSendAPI(senderPsid, response)
   }
   // URL variables
-  const taiwanTimeNow = new Date(Date.now() + 28800000).toISOString()
   const filteredLocation = locations.filter(location => location.name.includes(receivedPostback.payload))
   const locationName = filteredLocation[0].alias
   const LocationLon = filteredLocation[0].lon
@@ -205,7 +202,6 @@ const handlePostback = (senderPsid, receivedPostback) => {
         result.time,
         result.location,
         result.tideChanging,
-        taiwanTimeNow.substring(11, 19),
         result.waterTemperature,
         result.waveHeight,
         result.waveDirection,
@@ -329,7 +325,6 @@ function genResponse (
   time,
   location,
   tideChanging,
-  timeNow,
   waterTemperature,
   waveHeight,
   waveDirection,
@@ -344,7 +339,7 @@ function genResponse (
 ) {
   const response = {
     text: `
-        日期： ${time}\n地點： ${location}\n\n${tideChanging}\n\n即時訊息 (${timeNow})\n\n海水溫度： ${waterTemperature}度\n浪高： ${waveHeight}米\n浪向： from  ` + waveDirection + `\n流速： ${currentSpeed}米/秒\n流向： from ` + currentDirection + `\n潮差： ${tideDifference}\n\n` + '雲量： ' + cloudCover + `\n氣溫： ${temperature}度\n濕度： ${humidity}%\n雨量${rain}\n${wind}`,
+        日期： ${time}\n地點： ${location}\n\n${tideChanging}\n\n海水溫度： ${waterTemperature}度\n浪高： ${waveHeight}米\n浪向： from  ` + waveDirection + `\n流速： ${currentSpeed}米/秒\n流向： from ` + currentDirection + `\n潮差： ${tideDifference}\n\n` + '雲量： ' + cloudCover + `\n氣溫： ${temperature}度\n濕度： ${humidity}%\n雨量${rain}\n${wind}`,
     quick_replies: quickReplies
   }
   return response
@@ -425,4 +420,4 @@ function callSendAPI (senderPsid, response) {
   })
 }
 
-module.exports = { handleMessage, handlePostback }
+module.exports = { handleMessage, handlePostback, genResult }

@@ -6,14 +6,17 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
+    "seed": "node models/seeder.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Pin Hsu Chen",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.27.2",
+    "cron": "^2.0.0",
     "dotenv": "^16.0.1",
     "express": "^4.18.1",
+    "mongoose": "^6.3.4",
     "nodemon": "^2.0.16",
     "request": "^2.88.2"
   },
