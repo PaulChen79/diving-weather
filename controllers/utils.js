@@ -10,7 +10,13 @@ const quickReplies = [{
   content_type: 'text',
   title: '如何使用',
   payload: '<POSTBACK_PAYLOAD>'
-}, {
+},
+{
+  content_type: 'text',
+  title: '建議與回報',
+  payload: '<POSTBACK_PAYLOAD>'
+},
+{
   content_type: 'text',
   title: '推薦的潛點',
   payload: '<POSTBACK_PAYLOAD>'
@@ -95,6 +101,25 @@ const handleMessage = (senderPsid, receivedMessage) => {
     } else if (receivedMessage.text.includes('保羅')) {
       const response = {
         text: '嗯？雖然我不知道你說什麼，但我知道保羅他很帥',
+        quick_replies: quickReplies
+      }
+      return callSendAPI(senderPsid, response)
+    } else if (receivedMessage.text === '建議與回報') {
+      const response = {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: [{
+              title: '有什麼建議和Feedback歡迎私訊保羅教練的IG\n\n他會盡快回覆給你唷～',
+              buttons: [{
+                type: 'web_url',
+                url: 'https://instagram.com/paul_cph11?igshid=YmMyMTA2M2Y=',
+                title: '私訊IG'
+              }]
+            }]
+          }
+        },
         quick_replies: quickReplies
       }
       return callSendAPI(senderPsid, response)
