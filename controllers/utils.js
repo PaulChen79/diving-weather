@@ -189,7 +189,7 @@ function genResult (tideData, weatherData, waveData, name, today) {
     tideChanging: `當日潮汐變化：\n${tideElemant.time[0] ? tideElemant.time[0].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[0] ? tideElemant.time[0].parameter[0].parameterValue : ''}\n${tideElemant.time[1] ? tideElemant.time[1].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[1] ? tideElemant.time[1].parameter[0].parameterValue : ''}\n${tideElemant.time[2] ? tideElemant.time[2].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[2] ? tideElemant.time[2].parameter[0].parameterValue : ''}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`,
     temperature: Math.round(weatherData.data.main.temp - 273.15),
     humidity: weatherData.data.main.humidity,
-    rain: `每小時： ${weatherData.data.rain['1h'] || 0}mm`,
+    rain: `每小時： ${weatherData.data.rain ? weatherData.data.rain['1h'] : 0}mm`,
     wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDeg(weatherData.data.wind.deg),
     waveHeight: waveData.data.hours[0].waveHeight.sg,
     waveDirection: changeDeg(waveData.data.hours[0].waveDirection.sg),
