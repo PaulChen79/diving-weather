@@ -1,27 +1,65 @@
 require('dotenv').config()
+
+// Packages
 const axios = require('axios')
 const request = require('request')
 const locations = require('../models/locations.json')
+
+// Response tempelates
+const quickReplies = [{
+  content_type: 'text',
+  title: '如何使用',
+  payload: '<POSTBACK_PAYLOAD>'
+}, {
+  content_type: 'text',
+  title: '推薦的潛點',
+  payload: '<POSTBACK_PAYLOAD>'
+},
+{
+  content_type: 'text',
+  title: '經常查詢的潛點',
+  payload: '<POSTBACK_PAYLOAD>'
+}
+]
+const oftenPostBackButton = [{
+  type: 'postback',
+  title: '小琉球',
+  payload: '琉球'
+},
+{
+  type: 'postback',
+  title: '潮境',
+  payload: '潮境'
+},
+{
+  type: 'postback',
+  title: '墾丁',
+  payload: '墾丁'
+}
+]
+const popularPostBackButton = [{
+  type: 'postback',
+  title: '小琉球',
+  payload: '琉球'
+},
+{
+  type: 'postback',
+  title: '綠島',
+  payload: '綠島'
+},
+{
+  type: 'postback',
+  title: '蘭嶼',
+  payload: '蘭嶼'
+}
+]
 
 const handleMessage = (senderPsid, receivedMessage) => {
   if (receivedMessage.text) {
     if (receivedMessage.text === '如何使用') {
       const response = {
         text: '輸入常用潛點，如：小琉球、玉女岩等關鍵字來查詢\n\n如果關鍵字不符合可以再多嘗試幾個看看~\n\n目前還再測試階段中，如果有任何無法解決的問題或是有想要許願的潛點還請聯絡作者唷~',
-        quick_replies: [{
-          content_type: 'text',
-          title: '如何使用',
-          payload: '<POSTBACK_PAYLOAD>'
-        }, {
-          content_type: 'text',
-          title: '推薦的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        },
-        {
-          content_type: 'text',
-          title: '經常查詢的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        }]
+        quick_replies: quickReplies
       }
       return callSendAPI(senderPsid, response)
     } else if (receivedMessage.text === '推薦的潛點') {
@@ -32,39 +70,11 @@ const handleMessage = (senderPsid, receivedMessage) => {
             template_type: 'generic',
             elements: [{
               title: '這邊推薦幾個大家常去的潛點給你~',
-              buttons: [{
-                type: 'postback',
-                title: '小琉球',
-                payload: '小琉球'
-              },
-              {
-                type: 'postback',
-                title: '潮境',
-                payload: '潮境'
-              },
-              {
-                type: 'postback',
-                title: '墾丁',
-                payload: '墾丁'
-              }
-              ]
+              buttons: oftenPostBackButton
             }]
           }
         },
-        quick_replies: [{
-          content_type: 'text',
-          title: '如何使用',
-          payload: '<POSTBACK_PAYLOAD>'
-        }, {
-          content_type: 'text',
-          title: '推薦的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        },
-        {
-          content_type: 'text',
-          title: '經常查詢的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        }]
+        quick_replies: quickReplies
       }
       return callSendAPI(senderPsid, response)
     } else if (receivedMessage.text === '經常查詢的潛點') {
@@ -75,63 +85,23 @@ const handleMessage = (senderPsid, receivedMessage) => {
             template_type: 'generic',
             elements: [{
               title: '這邊是幾個常被搜尋的潛點~',
-              buttons: [{
-                type: 'postback',
-                title: '小琉球',
-                payload: '小琉球'
-              },
-              {
-                type: 'postback',
-                title: '蘭嶼',
-                payload: '蘭嶼'
-              },
-              {
-                type: 'postback',
-                title: '綠島',
-                payload: '綠島'
-              }
-              ]
+              buttons: popularPostBackButton
             }]
           }
         },
-        quick_replies: [{
-          content_type: 'text',
-          title: '如何使用',
-          payload: '<POSTBACK_PAYLOAD>'
-        }, {
-          content_type: 'text',
-          title: '推薦的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        },
-        {
-          content_type: 'text',
-          title: '經常查詢的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        }]
+        quick_replies: quickReplies
       }
       return callSendAPI(senderPsid, response)
     } else if (receivedMessage.text.includes('保羅')) {
       const response = {
         text: '嗯？雖然我不知道你說什麼，但我知道保羅他很帥',
-        quick_replies: [{
-          content_type: 'text',
-          title: '如何使用',
-          payload: '<POSTBACK_PAYLOAD>'
-        }, {
-          content_type: 'text',
-          title: '推薦的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        },
-        {
-          content_type: 'text',
-          title: '經常查詢的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        }]
+        quick_replies: quickReplies
       }
       return callSendAPI(senderPsid, response)
     } else {
       const filteredLocation = locations.filter(location => location.name.includes(receivedMessage.text))
       if (filteredLocation.length) {
+        // URL variables
         const locationName = filteredLocation[0].alias
         const LocationLon = filteredLocation[0].lon
         const locationLat = filteredLocation[0].lat
@@ -140,6 +110,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
         const timeNextHr = new Date(Date.now() + 3600000).toISOString()
         const today = new Date(Date.now()).toISOString().substring(0, 10) + 'T00:00:00'
         const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
+        // URLs
         const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
         const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
         const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentDirection,currentSpeed&start=${timeNow}&end=${timeNextHr}`)
@@ -168,77 +139,26 @@ const handleMessage = (senderPsid, receivedMessage) => {
             const tideElemant = tideData.data.records.location[0].validTime[0].weatherElement[2]
             result.location = tideData.data.records.location[0].locationName
             result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
-            result.tideChanging = `當日潮汐變化：\n${tideElemant.time[0].dataTime.substring(11, 16)} - ${tideElemant.time[0].parameter[0].parameterValue}\n${tideElemant.time[1].dataTime.substring(11, 16)} - ${tideElemant.time[1].parameter[0].parameterValue}\n${tideElemant.time[2].dataTime.substring(11, 16)} - ${tideElemant.time[2].parameter[0].parameterValue}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : ''} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`
+            result.tideChanging = `當日潮汐變化：\n${tideElemant.time[0] ? tideElemant.time[0].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[0] ? tideElemant.time[0].parameter[0].parameterValue : ''}\n${tideElemant.time[1] ? tideElemant.time[1].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[1] ? tideElemant.time[1].parameter[0].parameterValue : ''}\n${tideElemant.time[2] ? tideElemant.time[2].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[2] ? tideElemant.time[2].parameter[0].parameterValue : ''}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`
             return result
           })
           .then(result => {
+            const suggestResponse = checkWaterAndAirTemp(result.temperature, result.waterTemperature)
             const response = {
               text: `
-              日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n流速： ${result.currentSpeed}米/秒\n流向： from ` + result.currentDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`
+              日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n流速： ${result.currentSpeed}米/秒\n流向： from ` + result.currentDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+              quick_replies: quickReplies
             }
             callSendAPI(senderPsid, response)
-            return [result.temperature, result.waterTemperature]
-          })
-          .then(([temperature, waterTemperature]) => {
-            console.log(temperature, waterTemperature)
-            let status = ''
-            if (temperature >= 29 && waterTemperature >= 28) {
-              status = 'hot'
-            } else if (temperature >= 29 && (waterTemperature < 28 && waterTemperature >= 25)) {
-              status = 'littleHot'
-            } else if ((temperature < 29 && temperature >= 26) && (waterTemperature < 28 && waterTemperature >= 25)) {
-              status = 'warm'
-            } else {
-              status = 'cold'
-            }
-            const response = {
-              text: '',
-              quick_replies: [{
-                content_type: 'text',
-                title: '如何使用',
-                payload: '<POSTBACK_PAYLOAD>'
-              }, {
-                content_type: 'text',
-                title: '推薦的潛點',
-                payload: '<POSTBACK_PAYLOAD>'
-              },
-              {
-                content_type: 'text',
-                title: '經常查詢的潛點',
-                payload: '<POSTBACK_PAYLOAD>'
-              }]
-            }
-            if (status === 'hot') {
-              response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
-            } else if (status === 'littleHot') {
-              response.text = '穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
-            } else if (status === 'warm') {
-              response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
-            } else {
-              response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
-            }
             setTimeout(() => {
-              callSendAPI(senderPsid, response)
+              callSendAPI(senderPsid, suggestResponse)
             }, '2000')
           })
           .catch(error => console.log(error))
       } else {
         const response = {
           text: '抱歉我不認識這個潛點，請換個地點或名稱試試看',
-          quick_replies: [{
-            content_type: 'text',
-            title: '如何使用',
-            payload: '<POSTBACK_PAYLOAD>'
-          }, {
-            content_type: 'text',
-            title: '推薦的潛點',
-            payload: '<POSTBACK_PAYLOAD>'
-          },
-          {
-            content_type: 'text',
-            title: '經常查詢的潛點',
-            payload: '<POSTBACK_PAYLOAD>'
-          }]
+          quick_replies: quickReplies
         }
         callSendAPI(senderPsid, response)
       }
@@ -246,20 +166,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
   } else {
     const response = {
       text: '抱歉我看不懂你傳這個什麼意思？\n不要玩我啦～～～\n請輸入"文字"地點或名稱試試看',
-      quick_replies: [{
-        content_type: 'text',
-        title: '如何使用',
-        payload: '<POSTBACK_PAYLOAD>'
-      }, {
-        content_type: 'text',
-        title: '推薦的潛點',
-        payload: '<POSTBACK_PAYLOAD>'
-      },
-      {
-        content_type: 'text',
-        title: '經常查詢的潛點',
-        payload: '<POSTBACK_PAYLOAD>'
-      }]
+      quick_replies: quickReplies
     }
     callSendAPI(senderPsid, response)
   }
@@ -268,20 +175,7 @@ const handlePostback = (senderPsid, receivedPostback) => {
   if (receivedPostback.title === 'Get Started') {
     const response = {
       text: '哈囉！這裡是潛點即時氣候查詢機器人\n你可以輸入潛點關鍵字來查詢當地天候狀況\n或是點選以下按鈕來得到更多資訊唷！',
-      quick_replies: [{
-        content_type: 'text',
-        title: '如何使用',
-        payload: '<POSTBACK_PAYLOAD>'
-      }, {
-        content_type: 'text',
-        title: '推薦的潛點',
-        payload: '<POSTBACK_PAYLOAD>'
-      },
-      {
-        content_type: 'text',
-        title: '經常查詢的潛點',
-        payload: '<POSTBACK_PAYLOAD>'
-      }]
+      quick_replies: quickReplies
     }
     return callSendAPI(senderPsid, response)
   }
@@ -305,9 +199,9 @@ const handlePostback = (senderPsid, receivedPostback) => {
   ])
     .then(([tideData, weatherData, waveData]) => {
       const result = {
-        location: '',
+        location: filteredLocation[0].name,
         time: `${today.substring(0, 10)}`,
-        tideDifference: '',
+        tideDifference: tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue,
         tideChanging: '',
         temperature: Math.round(weatherData.data.main.temp - 273.15),
         humidity: weatherData.data.main.humidity,
@@ -320,78 +214,26 @@ const handlePostback = (senderPsid, receivedPostback) => {
         currentDirection: changeDeg(waveData.data.hours[0].currentDirection.sg)
       }
 
-      result.location = tideData.data.records.location[0].locationName
-      result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
-      result.tideChanging = `當日潮汐變化：\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[0].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[1].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[2].parameter[0].parameterValue}\n${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].dataTime.substring(11, 16)} - ${tideData.data.records.location[0].validTime[0].weatherElement[2].time[3].parameter[0].parameterValue}`
+      const tideElemant = tideData.data.records.location[0].validTime[0].weatherElement[2]
+      result.tideChanging = `當日潮汐變化：\n${tideElemant.time[0] ? tideElemant.time[0].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[0] ? tideElemant.time[0].parameter[0].parameterValue : ''}\n${tideElemant.time[1] ? tideElemant.time[1].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[1] ? tideElemant.time[1].parameter[0].parameterValue : ''}\n${tideElemant.time[2] ? tideElemant.time[2].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[2] ? tideElemant.time[2].parameter[0].parameterValue : ''}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`
       return result
     })
     .then(result => {
+      const suggestResponse = checkWaterAndAirTemp(result.temperature, result.waterTemperature)
       const response = {
         text: `
-            日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n流速： ${result.currentSpeed}米/秒\n流向： from ` + result.currentDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
-        quick_replies: [{
-          content_type: 'text',
-          title: '如何使用',
-          payload: '<POSTBACK_PAYLOAD>'
-        }, {
-          content_type: 'text',
-          title: '推薦的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        },
-        {
-          content_type: 'text',
-          title: '經常查詢的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        }]
+            日期： ${result.time}\n地點： ${result.location}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n流速： ${result.currentSpeed}米/秒\n流向： from ` + result.currentDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
+        quick_replies: quickReplies
       }
       callSendAPI(senderPsid, response)
-      return [result.temperature, result.waterTemperature]
-    })
-    .then(([temperature, waterTemperature]) => {
-      let status = ''
-      if (temperature >= 29 && waterTemperature >= 28) {
-        status = 'hot'
-      } else if (temperature >= 29 && (waterTemperature < 28 && waterTemperature >= 25)) {
-        status = 'littleHot'
-      } else if ((temperature < 29 && temperature >= 26) && (waterTemperature < 28 && waterTemperature >= 25)) {
-        status = 'warm'
-      } else {
-        status = 'cold'
-      }
-      const response = {
-        text: '',
-        quick_replies: [{
-          content_type: 'text',
-          title: '如何使用',
-          payload: '<POSTBACK_PAYLOAD>'
-        }, {
-          content_type: 'text',
-          title: '推薦的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        },
-        {
-          content_type: 'text',
-          title: '經常查詢的潛點',
-          payload: '<POSTBACK_PAYLOAD>'
-        }]
-      }
-      if (status === 'hot') {
-        response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
-      } else if (status === 'littleHot') {
-        response.text = '穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
-      } else if (status === 'warm') {
-        response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
-      } else {
-        response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
-      }
       setTimeout(() => {
-        callSendAPI(senderPsid, response)
+        callSendAPI(senderPsid, suggestResponse)
       }, '2000')
     })
     .catch(error => console.log(error))
 }
 
-const changeDeg = deg => {
+function changeDeg (deg) {
   let windDirection = ''
   if ((deg > 337.5 && deg <= 359) || deg === 0) {
     windDirection = '北 ↓'
@@ -428,7 +270,7 @@ const changeDeg = deg => {
   }
   return windDirection
 }
-const callSendAPI = async (senderPsid, response) => {
+function callSendAPI (senderPsid, response) {
   const requestBody = {
     recipient: {
       id: senderPsid
@@ -502,6 +344,36 @@ const callSendAPI = async (senderPsid, response) => {
       console.error('Unable to send message:' + err)
     }
   })
+}
+function checkWaterAndAirTemp (temperature, waterTemperature) {
+  const response = {
+    text: '',
+    quick_replies: quickReplies
+  }
+  let status = ''
+  if (temperature >= 29 && waterTemperature >= 28) {
+    status = 'hot'
+  } else if (temperature >= 29 && (waterTemperature <= 28 && waterTemperature >= 25)) {
+    status = 'airHot'
+  } else if ((temperature < 29 && temperature >= 26) && (waterTemperature <= 28 && waterTemperature >= 25)) {
+    status = 'warm'
+  } else if ((temperature < 29 && temperature >= 26) && waterTemperature >= 28) {
+    status = 'waterHot'
+  } else {
+    status = 'cold'
+  }
+  if (status === 'hot') {
+    response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
+  } else if (status === 'airHot') {
+    response.text = '氣溫熱熱的，水溫可能稍冷\n穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
+  } else if (status === 'warm') {
+    response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
+  } else if (status === 'waterHot') {
+    response.text = '水溫暖暖的，上岸可能稍冷\n穿上3mm以內的防寒衣應該足夠了～\n記得備一件毛巾衣在岸上唷\n還是要注意一下海象天氣喔！'
+  } else {
+    response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
+  }
+  return response
 }
 
 module.exports = { handleMessage, handlePostback }
