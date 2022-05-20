@@ -180,7 +180,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
             callSendAPI(senderPsid, response)
             return [result.temperature, result.waterTemperature]
           })
-          .then(([temperature, waterTemperature]) => {      
+          .then(([temperature, waterTemperature]) => {
             let status = ''
             if (temperature >= 29 && waterTemperature >= 28) {
               status = 'hot'
@@ -189,8 +189,8 @@ const handleMessage = (senderPsid, receivedMessage) => {
             } else {
               status = 'cold'
             }
-            let response = {
-              text: ``,
+            const response = {
+              text: '',
               quick_replies: [{
                 content_type: 'text',
                 title: '如何使用',
@@ -215,7 +215,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
             }
             setTimeout(() => {
               callSendAPI(senderPsid, response)
-            }, "2000")
+            }, '2000')
           })
           .catch(error => console.log(error))
       } else {
@@ -352,8 +352,8 @@ const handlePostback = (senderPsid, receivedPostback) => {
       } else {
         status = 'cold'
       }
-      let response = {
-        text: ``,
+      const response = {
+        text: '',
         quick_replies: [{
           content_type: 'text',
           title: '如何使用',
@@ -378,7 +378,7 @@ const handlePostback = (senderPsid, receivedPostback) => {
       }
       setTimeout(() => {
         callSendAPI(senderPsid, response)
-      }, "2000")
+      }, '2000')
     })
     .catch(error => console.log(error))
 }
@@ -432,7 +432,61 @@ const callSendAPI = (senderPsid, response) => {
     uri: 'https://graph.facebook.com/v13.0/me/messages',
     qs: { access_token: process.env.PAGE_ACCESS_TOKEN },
     method: 'POST',
+    json: {
+      recipient: {
+        id: senderPsid
+      },
+      sender_action: 'mark_seen'
+    }
+  }, (err, res, body) => {
+    if (!err) {
+      console.log('message sent!')
+    } else {
+      console.error('Unable to send message:' + err)
+    }
+  })
+
+  request({
+    uri: 'https://graph.facebook.com/v13.0/me/messages',
+    qs: { access_token: process.env.PAGE_ACCESS_TOKEN },
+    method: 'POST',
+    json: {
+      recipient: {
+        id: senderPsid
+      },
+      sender_action: 'typing_on'
+    }
+  }, (err, res, body) => {
+    if (!err) {
+      console.log('message sent!')
+    } else {
+      console.error('Unable to send message:' + err)
+    }
+  })
+
+  request({
+    uri: 'https://graph.facebook.com/v13.0/me/messages',
+    qs: { access_token: process.env.PAGE_ACCESS_TOKEN },
+    method: 'POST',
     json: requestBody
+  }, (err, res, body) => {
+    if (!err) {
+      console.log('message sent!')
+    } else {
+      console.error('Unable to send message:' + err)
+    }
+  })
+
+  request({
+    uri: 'https://graph.facebook.com/v13.0/me/messages',
+    qs: { access_token: process.env.PAGE_ACCESS_TOKEN },
+    method: 'POST',
+    json: {
+      recipient: {
+        id: senderPsid
+      },
+      sender_action: 'typing_off'
+    }
   }, (err, res, body) => {
     if (!err) {
       console.log('message sent!')
