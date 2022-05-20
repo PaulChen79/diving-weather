@@ -150,7 +150,6 @@ const handleMessage = (senderPsid, receivedMessage) => {
           axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
         ])
           .then(([tideData, weatherData, waveData]) => {
-            console.log(waveData.data.hours[0].currentSpeed, waveData.data.hours[0].currentDirection)
             const result = {
               location: '',
               time: `${today.substring(0, 10)}`,
@@ -181,9 +180,12 @@ const handleMessage = (senderPsid, receivedMessage) => {
             return [result.temperature, result.waterTemperature]
           })
           .then(([temperature, waterTemperature]) => {
+            console.log(temperature, waterTemperature)
             let status = ''
             if (temperature >= 29 && waterTemperature >= 28) {
               status = 'hot'
+            } else if (temperature >= 29 && (waterTemperature < 28 && waterTemperature >= 25)) {
+              status = 'littleHot'
             } else if ((temperature < 29 && temperature >= 26) && (waterTemperature < 28 && waterTemperature >= 25)) {
               status = 'warm'
             } else {
@@ -208,8 +210,10 @@ const handleMessage = (senderPsid, receivedMessage) => {
             }
             if (status === 'hot') {
               response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
+            } else if (status === 'littleHot') {
+              response.text = '穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
             } else if (status === 'warm') {
-              response.text = '穿上3mm以內的防寒衣應該足夠了～\n泡太久可能還是會有點冷\n還是要注意一下海象天氣喔！'
+              response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
             } else {
               response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
             }
@@ -347,6 +351,8 @@ const handlePostback = (senderPsid, receivedPostback) => {
       let status = ''
       if (temperature >= 29 && waterTemperature >= 28) {
         status = 'hot'
+      } else if (temperature >= 29 && (waterTemperature < 28 && waterTemperature >= 25)) {
+        status = 'littleHot'
       } else if ((temperature < 29 && temperature >= 26) && (waterTemperature < 28 && waterTemperature >= 25)) {
         status = 'warm'
       } else {
@@ -371,8 +377,10 @@ const handlePostback = (senderPsid, receivedPostback) => {
       }
       if (status === 'hot') {
         response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
+      } else if (status === 'littleHot') {
+        response.text = '穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
       } else if (status === 'warm') {
-        response.text = '穿上3mm以內的防寒衣應該足夠了～\n泡太久可能還是會有點冷\n還是要注意一下海象天氣喔！'
+        response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
       } else {
         response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
       }
@@ -420,7 +428,7 @@ const changeDeg = deg => {
   }
   return windDirection
 }
-const callSendAPI = (senderPsid, response) => {
+const callSendAPI = async (senderPsid, response) => {
   const requestBody = {
     recipient: {
       id: senderPsid
