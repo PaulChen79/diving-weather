@@ -6,7 +6,7 @@ const locations = require('../models/locations.json')
 const Weather = require('../models/weather')
 const axios = require('axios')
 
-const job = new CronJob('0 0 * * * ?', () => {
+const job = new CronJob('0 0 */1 * * *', () => {
   console.log('start update...')
   return Promise.all(Array.from(locations, location => {
     const locationName = location.alias
