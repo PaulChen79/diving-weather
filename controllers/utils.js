@@ -113,7 +113,7 @@ const handleMessage = (senderPsid, receivedMessage) => {
         // URLs
         const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
         const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-        const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentDirection,currentSpeed&start=${timeNow}&end=${timeNextHr}`)
+        const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentDirection,currentSpeed,cloudCover&start=${timeNow}&end=${timeNextHr}`)
 
         return Promise.all([
           axios.get(tideUrl),
@@ -121,34 +121,29 @@ const handleMessage = (senderPsid, receivedMessage) => {
           axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
         ])
           .then(([tideData, weatherData, waveData]) => {
-            const result = {
-              location: '',
-              time: `${today.substring(0, 10)}`,
-              tideDifference: '',
-              tideChanging: '',
-              temperature: Math.round(weatherData.data.main.temp - 273.15),
-              humidity: weatherData.data.main.humidity,
-              rain: `每小時： ${weatherData.data.rain || 0}mm`,
-              wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDeg(weatherData.data.wind.deg),
-              waveHeight: waveData.data.hours[0].waveHeight.sg,
-              waveDirection: changeDeg(waveData.data.hours[0].waveDirection.sg),
-              waterTemperature: waveData.data.hours[0].waterTemperature.sg,
-              currentSpeed: waveData.data.hours[0].currentSpeed.sg,
-              currentDirection: changeDeg(waveData.data.hours[0].currentDirection.sg)
-            }
-            const tideElemant = tideData.data.records.location[0].validTime[0].weatherElement[2]
-            result.location = tideData.data.records.location[0].locationName
-            result.tideDifference = tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue
-            result.tideChanging = `當日潮汐變化：\n${tideElemant.time[0] ? tideElemant.time[0].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[0] ? tideElemant.time[0].parameter[0].parameterValue : ''}\n${tideElemant.time[1] ? tideElemant.time[1].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[1] ? tideElemant.time[1].parameter[0].parameterValue : ''}\n${tideElemant.time[2] ? tideElemant.time[2].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[2] ? tideElemant.time[2].parameter[0].parameterValue : ''}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`
+            const result = genResult(tideData, weatherData, waveData, filteredLocation[0].name, today)
             return result
           })
           .then(result => {
+            // Generate response and send to client
             const suggestResponse = checkWaterAndAirTemp(result.temperature, result.waterTemperature)
-            const response = {
-              text: `
-              日期： ${result.time}\n地點： ${filteredLocation[0].name}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n流速： ${result.currentSpeed}米/秒\n流向： from ` + result.currentDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
-              quick_replies: quickReplies
-            }
+            const response = genResponse(
+              result.time,
+              result.location,
+              result.tideChanging,
+              taiwanTimeNow.substring(11, 19),
+              result.waterTemperature,
+              result.waveHeight,
+              result.waveDirection,
+              result.currentSpeed,
+              result.currentDirection,
+              result.tideDifference,
+              result.temperature,
+              result.humidity,
+              result.rain,
+              result.wind,
+              result.cloudCover
+            )
             callSendAPI(senderPsid, response)
             setTimeout(() => {
               callSendAPI(senderPsid, suggestResponse)
@@ -179,18 +174,20 @@ const handlePostback = (senderPsid, receivedPostback) => {
     }
     return callSendAPI(senderPsid, response)
   }
+  // URL variables
+  const taiwanTimeNow = new Date(Date.now() + 28800000).toISOString()
   const filteredLocation = locations.filter(location => location.name.includes(receivedPostback.payload))
   const locationName = filteredLocation[0].alias
   const LocationLon = filteredLocation[0].lon
   const locationLat = filteredLocation[0].lat
   const timeNow = new Date(Date.now()).toISOString()
-  const taiwanTimeNow = new Date(Date.now() + 28800000).toISOString()
   const timeNextHr = new Date(Date.now() + 3600000).toISOString()
   const today = new Date(Date.now()).toISOString().substring(0, 10) + 'T00:00:00'
   const nextDay = new Date(Date.now() + 86400000).toISOString().substring(0, 10) + 'T00:00:00'
+  // URLs
   const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
   const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-  const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentSpeed,currentDirection&start=${timeNow}&end=${timeNextHr}`)
+  const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentSpeed,currentDirection,cloudCover&start=${timeNow}&end=${timeNextHr}`)
 
   return Promise.all([
     axios.get(tideUrl),
@@ -198,33 +195,29 @@ const handlePostback = (senderPsid, receivedPostback) => {
     axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
   ])
     .then(([tideData, weatherData, waveData]) => {
-      const result = {
-        location: filteredLocation[0].name,
-        time: `${today.substring(0, 10)}`,
-        tideDifference: tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue,
-        tideChanging: '',
-        temperature: Math.round(weatherData.data.main.temp - 273.15),
-        humidity: weatherData.data.main.humidity,
-        rain: `每小時： ${weatherData.data.rain || 0}mm`,
-        wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDeg(weatherData.data.wind.deg),
-        waveHeight: waveData.data.hours[0].waveHeight.sg,
-        waveDirection: changeDeg(waveData.data.hours[0].waveDirection.sg),
-        waterTemperature: waveData.data.hours[0].waterTemperature.sg,
-        currentSpeed: waveData.data.hours[0].currentSpeed.sg,
-        currentDirection: changeDeg(waveData.data.hours[0].currentDirection.sg)
-      }
-
-      const tideElemant = tideData.data.records.location[0].validTime[0].weatherElement[2]
-      result.tideChanging = `當日潮汐變化：\n${tideElemant.time[0] ? tideElemant.time[0].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[0] ? tideElemant.time[0].parameter[0].parameterValue : ''}\n${tideElemant.time[1] ? tideElemant.time[1].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[1] ? tideElemant.time[1].parameter[0].parameterValue : ''}\n${tideElemant.time[2] ? tideElemant.time[2].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[2] ? tideElemant.time[2].parameter[0].parameterValue : ''}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`
+      const result = genResult(tideData, weatherData, waveData, filteredLocation[0].name, today)
       return result
     })
     .then(result => {
+      // Generate response and send to client
       const suggestResponse = checkWaterAndAirTemp(result.temperature, result.waterTemperature)
-      const response = {
-        text: `
-            日期： ${result.time}\n地點： ${result.location}\n\n${result.tideChanging}\n\n即時訊息 (${taiwanTimeNow.substring(11, 19)})\n\n海水溫度： ${result.waterTemperature}度\n浪高： ${result.waveHeight}米\n浪向： from  ` + result.waveDirection + `\n流速： ${result.currentSpeed}米/秒\n流向： from ` + result.currentDirection + `\n潮差： ${result.tideDifference}\n\n氣溫： ${result.temperature}度\n濕度： ${result.humidity}%\n雨量${result.rain}\n${result.wind}`,
-        quick_replies: quickReplies
-      }
+      const response = genResponse(
+        result.time,
+        result.location,
+        result.tideChanging,
+        taiwanTimeNow.substring(11, 19),
+        result.waterTemperature,
+        result.waveHeight,
+        result.waveDirection,
+        result.currentSpeed,
+        result.currentDirection,
+        result.tideDifference,
+        result.temperature,
+        result.humidity,
+        result.rain,
+        result.wind,
+        result.cloudCover
+      )
       callSendAPI(senderPsid, response)
       setTimeout(() => {
         callSendAPI(senderPsid, suggestResponse)
@@ -233,6 +226,27 @@ const handlePostback = (senderPsid, receivedPostback) => {
     .catch(error => console.log(error))
 }
 
+function genResult (tideData, weatherData, waveData, name, today) {
+  const tideElemant = tideData.data.records.location[0].validTime[0].weatherElement[2]
+  // Factoryig result date
+  const result = {
+    location: name,
+    time: `${today.substring(0, 10)}`,
+    tideDifference: tideData.data.records.location[0].validTime[0].weatherElement[1].elementValue,
+    tideChanging: `當日潮汐變化：\n${tideElemant.time[0] ? tideElemant.time[0].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[0] ? tideElemant.time[0].parameter[0].parameterValue : ''}\n${tideElemant.time[1] ? tideElemant.time[1].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[1] ? tideElemant.time[1].parameter[0].parameterValue : ''}\n${tideElemant.time[2] ? tideElemant.time[2].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[2] ? tideElemant.time[2].parameter[0].parameterValue : ''}\n${tideElemant.time[3] ? tideElemant.time[3].dataTime.substring(11, 16) : '暫無資料'} - ${tideElemant.time[3] ? tideElemant.time[3].parameter[0].parameterValue : ''}`,
+    temperature: Math.round(weatherData.data.main.temp - 273.15),
+    humidity: weatherData.data.main.humidity,
+    rain: `每小時： ${weatherData.data.rain || 0}mm`,
+    wind: `風速： ${weatherData.data.wind.speed}miles/小時\n` + '風向： from ' + changeDeg(weatherData.data.wind.deg),
+    waveHeight: waveData.data.hours[0].waveHeight.sg,
+    waveDirection: changeDeg(waveData.data.hours[0].waveDirection.sg),
+    waterTemperature: waveData.data.hours[0].waterTemperature.sg,
+    currentSpeed: waveData.data.hours[0].currentSpeed.sg,
+    currentDirection: changeDeg(waveData.data.hours[0].currentDirection.sg),
+    cloudCover: genCloudCover(waveData.data.hours[0].cloudCover.sg)
+  }
+  return result
+}
 function changeDeg (deg) {
   let windDirection = ''
   if ((deg > 337.5 && deg <= 359) || deg === 0) {
@@ -269,6 +283,71 @@ function changeDeg (deg) {
     windDirection = '北北西 ↘'
   }
   return windDirection
+}
+function checkWaterAndAirTemp (temperature, waterTemperature) {
+  const response = {
+    text: '',
+    quick_replies: quickReplies
+  }
+  let status = ''
+  if (temperature >= 29 && waterTemperature >= 28) {
+    status = 'hot'
+  } else if (temperature >= 29 && (waterTemperature <= 28 && waterTemperature >= 25)) {
+    status = 'airHot'
+  } else if ((temperature < 29 && temperature >= 26) && (waterTemperature <= 28 && waterTemperature >= 25)) {
+    status = 'warm'
+  } else if ((temperature < 29 && temperature >= 26) && waterTemperature >= 28) {
+    status = 'waterHot'
+  } else {
+    status = 'cold'
+  }
+  if (status === 'hot') {
+    response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
+  } else if (status === 'airHot') {
+    response.text = '氣溫熱熱的，水溫可能稍冷\n穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
+  } else if (status === 'warm') {
+    response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
+  } else if (status === 'waterHot') {
+    response.text = '水溫暖暖的，上岸可能稍冷\n穿上3mm以內的防寒衣應該足夠了～\n記得備一件毛巾衣在岸上唷\n還是要注意一下海象天氣喔！'
+  } else {
+    response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
+  }
+  return response
+}
+function genCloudCover (percent) {
+  let result = ''
+  if (percent <= 25) {
+    result = '晴天'
+  } else if (percent > 25 && percent <= 62.5) {
+    result = '疏雲'
+  } else {
+    result = '多雲'
+  }
+  return result
+}
+function genResponse (
+  time,
+  location,
+  tideChanging,
+  timeNow,
+  waterTemperature,
+  waveHeight,
+  waveDirection,
+  currentSpeed,
+  currentDirection,
+  tideDifference,
+  temperature,
+  humidity,
+  rain,
+  wind,
+  cloudCover
+) {
+  const response = {
+    text: `
+        日期： ${time}\n地點： ${location}\n\n${tideChanging}\n\n即時訊息 (${timeNow})\n\n海水溫度： ${waterTemperature}度\n浪高： ${waveHeight}米\n浪向： from  ` + waveDirection + `\n流速： ${currentSpeed}米/秒\n流向： from ` + currentDirection + `\n潮差： ${tideDifference}\n\n` + '雲量： ' + cloudCover + `\n氣溫： ${temperature}度\n濕度： ${humidity}%\n雨量${rain}\n${wind}`,
+    quick_replies: quickReplies
+  }
+  return response
 }
 function callSendAPI (senderPsid, response) {
   const requestBody = {
@@ -344,36 +423,6 @@ function callSendAPI (senderPsid, response) {
       console.error('Unable to send message:' + err)
     }
   })
-}
-function checkWaterAndAirTemp (temperature, waterTemperature) {
-  const response = {
-    text: '',
-    quick_replies: quickReplies
-  }
-  let status = ''
-  if (temperature >= 29 && waterTemperature >= 28) {
-    status = 'hot'
-  } else if (temperature >= 29 && (waterTemperature <= 28 && waterTemperature >= 25)) {
-    status = 'airHot'
-  } else if ((temperature < 29 && temperature >= 26) && (waterTemperature <= 28 && waterTemperature >= 25)) {
-    status = 'warm'
-  } else if ((temperature < 29 && temperature >= 26) && waterTemperature >= 28) {
-    status = 'waterHot'
-  } else {
-    status = 'cold'
-  }
-  if (status === 'hot') {
-    response.text = '今天穿比基尼或泳褲都OK啦！\n不過還是要注意一下海象天氣喔！'
-  } else if (status === 'airHot') {
-    response.text = '氣溫熱熱的，水溫可能稍冷\n穿上3mm以內的防寒衣應該足夠了～\n開心的玩水或訓練囉～\n還是要注意一下海象天氣喔！'
-  } else if (status === 'warm') {
-    response.text = '不是天氣稍冷就是水溫稍冷唷\n建議穿3mm或以上的防寒衣\n泡太久可能會有點冷\n還是要注意一下海象天氣喔！'
-  } else if (status === 'waterHot') {
-    response.text = '水溫暖暖的，上岸可能稍冷\n穿上3mm以內的防寒衣應該足夠了～\n記得備一件毛巾衣在岸上唷\n還是要注意一下海象天氣喔！'
-  } else {
-    response.text = '你有5mm以上的防寒衣嗎？\n沒有的話你最好注意一下保暖！\n還是要注意一下海象天氣喔！'
-  }
-  return response
 }
 
 module.exports = { handleMessage, handlePostback }
