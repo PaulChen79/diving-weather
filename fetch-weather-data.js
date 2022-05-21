@@ -1,12 +1,11 @@
 require('dotenv').config()
-const CronJob = require('cron').CronJob
 
 const { genResult } = require('./controllers/utils')
 const locations = require('./models/locations.json')
 const Weather = require('./models/weather')
 const axios = require('axios')
 
-const job = new CronJob('0 0 */1 * * *', () => {
+const fetchData = () => {
   console.log('start update...')
   return Promise.all(Array.from(locations, location => {
     const locationName = location.alias
@@ -55,6 +54,6 @@ const job = new CronJob('0 0 */1 * * *', () => {
       console.log('update done.')
     })
     .catch(error => console.log(error))
-})
+}
 
-job.start()
+fetchData()
