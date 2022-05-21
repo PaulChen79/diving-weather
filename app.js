@@ -3,7 +3,6 @@ const express = require('express')
 const app = express()
 const routes = require('./routes/index')
 require('./config/mongoose')
-require('./models/fetch-weather-data')
 const PORT = process.env.PORT || 3000
 
 app.use(express.urlencoded({ extended: true }))
