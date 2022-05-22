@@ -1,4 +1,5 @@
 require('dotenv').config()
+require('./config/mongoose')
 
 const { genResult } = require('./controllers/utils')
 const locations = require('./models/locations.json')
@@ -18,12 +19,12 @@ const fetchData = () => {
     // URLs
     const tideUrl = encodeURI('https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-A0021-001?Authorization=' + process.env.TAIWAN_OPENDATA_TOKEN + '&locationName=' + locationName + '&elementName=&sort=dataTime&timeFrom=' + today + '&timeTo=' + nextDay)
     const weatherUrl = encodeURI(`https://api.openweathermap.org/data/2.5/weather?lat=${locationLat}&lon=${LocationLon}&appid=${process.env.OPENWEATHER_TOKEN}`)
-    const waveRul = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentDirection,currentSpeed,cloudCover&start=${timeNow}&end=${timeNextHr}`)
+    const waveUrl = encodeURI(`https://api.stormglass.io/v2/weather/point?lat=${locationLat}&lng=${LocationLon}&params=waveHeight,waveDirection,waterTemperature,currentDirection,currentSpeed,cloudCover&start=${timeNow}&end=${timeNextHr}`)
 
     return Promise.all([
       axios.get(tideUrl),
       axios.get(weatherUrl),
-      axios.get(waveRul, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
+      axios.get(waveUrl, { headers: { Authorization: process.env.WAVE_API_TOKEN } })
     ])
       .then(([tideData, weatherData, waveData]) => {
         const result = genResult(tideData, weatherData, waveData, location.name, today)
